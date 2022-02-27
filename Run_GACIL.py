@@ -126,7 +126,8 @@ for iteration in range(2,6):
             if train_discrim_flag:
                 expert_acc_mean, learner_acc_mean = 0, 0
                 for i in range(args.discrim_update_num):
-                    expert_acc, learner_acc = agent.train_discrim(demonstrations,args.batch_size)
+                    for m in range(10):
+                        expert_acc, learner_acc = agent.train_discrim(demonstrations,args.batch_size)
                     agent.train_generator(args.batch_size)
 
                     expert_acc_mean  += expert_acc

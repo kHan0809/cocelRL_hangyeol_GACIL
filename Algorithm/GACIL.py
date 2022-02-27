@@ -6,6 +6,7 @@ from Common.Utils import copy_weight, soft_update, hard_update
 from torch.optim import Adam
 from Model.Model import QNetwork, GenerativeGaussianMLPActor,  MLPQFunction_double, Discriminator
 import math
+import torch.autograd as autograd
 import os
 import time
 
@@ -38,7 +39,7 @@ class GACIL(object):
 
         self.policy = GenerativeGaussianMLPActor(state_dim, action_dim,args.hidden_dim).to(self.device)
         self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
-        self.policy_optim_GAN = Adam(self.policy.parameters(), lr=args.lr/100.0)
+        self.policy_optim_GAN = Adam(self.policy.parameters(), lr=args.lr)
         self.policy_target = GenerativeGaussianMLPActor(state_dim, action_dim,args.hidden_dim).to(self.device)
         hard_update(self.policy_target, self.policy)
 
@@ -53,7 +54,7 @@ class GACIL(object):
         self.beta_max =args.beta_max
 
         self.discrim = Discriminator(state_dim + action_dim, args.hidden_dim).to(self.device)
-        self.discrim_optim = Adam(self.discrim.parameters(),lr=args.lr/10.0)
+        self.discrim_optim = Adam(self.discrim.parameters(),lr=args.lr)
         self.lambda_gp=args.lambda_gp
 
 
@@ -217,18 +218,19 @@ class GACIL(object):
         state_batch  = torch.FloatTensor(state_batch).to(self.device)
         action_batch = self.policy(state_batch)
 
-        criterion = torch.nn.BCELoss()
+
         sample_idx_demonstrations = np.random.randint(0,50000,size=batch_size)
         sample_demonstrations=demonstrations[sample_idx_demonstrations,:]
 
 
         learner = self.discrim(torch.cat([state_batch, action_batch], dim=1))
         sample_demonstrations = torch.Tensor(sample_demonstrations).to(self.device)
-
-
         expert = self.discrim(sample_demonstrations)
 
-        discrim_loss = criterion(learner, torch.ones((state_batch.shape[0], 1)).to(self.device)) + criterion(expert, torch.zeros((sample_demonstrations.shape[0], 1)).to(self.device))
+        gradient_penalty = self.compute_gradient_penalty(sample_demonstrations.cpu().detach().numpy(), torch.cat([state_batch, action_batch], dim=1).cpu().detach().numpy())
+
+
+        discrim_loss = - torch.mean(expert) + torch.mean(learner) + self.lambda_gp*gradient_penalty
 
         self.discrim_optim.zero_grad()
         discrim_loss.backward()
@@ -255,26 +257,27 @@ class GACIL(object):
         self.policy_optim_GAN.step()
 
 
-    # def compute_gradient_penalty(self,expert_data,fake_data):
-    #     """Calculates the gradient penalty loss for WGAN GP"""
-    #     # Random weight term for interpolation between real and fake samples
-    #     alpha = np.random.random((expert_data.size(0), 1, 1, 1))
-    #     # Get random interpolation between real and fake samples
-    #     interpolates = (alpha * real_samples + ((1 - alpha) * fake_samples)).requires_grad_(True)
-    #     d_interpolates = D(interpolates)
-    #     fake = Variable(Tensor(real_samples.shape[0], 1).fill_(1.0), requires_grad=False)
-    #     # Get gradient w.r.t. interpolates
-    #     gradients = autograd.grad(
-    #         outputs=d_interpolates,
-    #         inputs=interpolates,
-    #         grad_outputs=fake,
-    #         create_graph=True,
-    #         retain_graph=True,
-    #         only_inputs=True,
-    #     )[0]
-    #     gradients = gradients.view(gradients.size(0), -1)
-    #     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
-    #     return gradient_penalty
+    def compute_gradient_penalty(self,expert_data,generate_data):
+        """Calculates the gradient penalty loss for WGAN GP"""
+        # Random weight term for interpolation between real and fake samples
+        alpha = np.random.random((expert_data.shape[0], 1))
+        # Get random interpolation between real and fake samples
+
+        interpolates = torch.FloatTensor((alpha * expert_data + ((1 - alpha) * generate_data))).requires_grad_(True).to(self.device)
+        d_interpolates = self.discrim(interpolates)
+        fake = torch.ones((expert_data.shape[0],1)).requires_grad_(False).to(self.device)
+        # Get gradient w.r.t. interpolates
+        gradients = autograd.grad(
+            outputs=d_interpolates,
+            inputs=interpolates,
+            grad_outputs=fake,
+            create_graph=True,
+            retain_graph=True,
+            only_inputs=True,
+        )[0]
+        gradients = gradients.view(gradients.size(0), -1)
+        gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+        return gradient_penalty
 
 
 
