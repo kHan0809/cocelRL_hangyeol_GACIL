@@ -54,6 +54,7 @@ class GACIL(object):
 
         self.discrim = Discriminator(state_dim + action_dim, args.hidden_dim).to(self.device)
         self.discrim_optim = Adam(self.discrim.parameters(),lr=args.lr/10.0)
+        self.lambda_gp=args.lambda_gp
 
 
 
@@ -217,19 +218,23 @@ class GACIL(object):
         action_batch = self.policy(state_batch)
 
         criterion = torch.nn.BCELoss()
+        sample_idx_demonstrations = np.random.randint(0,50000,size=batch_size)
+        sample_demonstrations=demonstrations[sample_idx_demonstrations,:]
+
 
         learner = self.discrim(torch.cat([state_batch, action_batch], dim=1))
-        demonstrations = torch.Tensor(demonstrations).to(self.device)
+        sample_demonstrations = torch.Tensor(sample_demonstrations).to(self.device)
 
-        expert = self.discrim(demonstrations)
 
-        discrim_loss = criterion(learner, torch.ones((state_batch.shape[0], 1)).to(self.device)) + criterion(expert, torch.zeros((demonstrations.shape[0], 1)).to(self.device))
+        expert = self.discrim(sample_demonstrations)
+
+        discrim_loss = criterion(learner, torch.ones((state_batch.shape[0], 1)).to(self.device)) + criterion(expert, torch.zeros((sample_demonstrations.shape[0], 1)).to(self.device))
 
         self.discrim_optim.zero_grad()
         discrim_loss.backward()
         self.discrim_optim.step()
 
-        expert_acc = ((self.discrim(demonstrations) < 0.5).float()).mean()
+        expert_acc = ((self.discrim(sample_demonstrations) < 0.5).float()).mean()
         learner_acc = ((self.discrim(torch.cat([state_batch, action_batch], dim=1)) > 0.5).float()).mean()
 
         return  expert_acc, learner_acc
@@ -248,6 +253,28 @@ class GACIL(object):
         self.policy_optim_GAN.zero_grad()
         G_loss.backward()
         self.policy_optim_GAN.step()
+
+
+    # def compute_gradient_penalty(self,expert_data,fake_data):
+    #     """Calculates the gradient penalty loss for WGAN GP"""
+    #     # Random weight term for interpolation between real and fake samples
+    #     alpha = np.random.random((expert_data.size(0), 1, 1, 1))
+    #     # Get random interpolation between real and fake samples
+    #     interpolates = (alpha * real_samples + ((1 - alpha) * fake_samples)).requires_grad_(True)
+    #     d_interpolates = D(interpolates)
+    #     fake = Variable(Tensor(real_samples.shape[0], 1).fill_(1.0), requires_grad=False)
+    #     # Get gradient w.r.t. interpolates
+    #     gradients = autograd.grad(
+    #         outputs=d_interpolates,
+    #         inputs=interpolates,
+    #         grad_outputs=fake,
+    #         create_graph=True,
+    #         retain_graph=True,
+    #         only_inputs=True,
+    #     )[0]
+    #     gradients = gradients.view(gradients.size(0), -1)
+    #     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+    #     return gradient_penalty
 
 
 

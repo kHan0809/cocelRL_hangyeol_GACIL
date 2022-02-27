@@ -51,6 +51,7 @@ parser.add_argument('--kernel'    ,   default='energy')
 parser.add_argument('--discrim_update_num', type=int, default=50, help='update number of discriminator (default: 2)')
 parser.add_argument('--suspend_accu_exp', type=float, default=0.80,help='accuracy for suspending discriminator about expert data (default: 0.8)')
 parser.add_argument('--suspend_accu_gen', type=float, default=0.80,help='accuracy for suspending discriminator about generated data (default: 0.8)')
+parser.add_argument('--lambda_gp', type=float, default=0.01, help='GP parameter')
 
 args = parser.parse_args()
 for iteration in range(2,6):
