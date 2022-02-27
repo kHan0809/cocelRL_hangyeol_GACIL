@@ -54,7 +54,7 @@ class GACIL(object):
         self.beta_max =args.beta_max
 
         self.discrim = Discriminator(state_dim + action_dim, args.hidden_dim).to(self.device)
-        self.discrim_optim = Adam(self.discrim.parameters(),lr=args.lr)
+        self.discrim_optim = Adam(self.discrim.parameters(),lr=args.lr/100.0)
         self.lambda_gp=args.lambda_gp
 
 
@@ -236,6 +236,7 @@ class GACIL(object):
         discrim_loss.backward()
         self.discrim_optim.step()
 
+
         expert_acc = ((self.discrim(sample_demonstrations) < 0.5).float()).mean()
         learner_acc = ((self.discrim(torch.cat([state_batch, action_batch], dim=1)) > 0.5).float()).mean()
 
@@ -248,13 +249,14 @@ class GACIL(object):
         action_batch = self.policy(state_batch)
 
         #==========train_G===============================
-        criterion = torch.nn.BCELoss()
 
         learner = self.discrim(torch.cat([state_batch, action_batch], dim=1))
-        G_loss  = criterion(learner, torch.ones((state_batch.shape[0], 1)).to(self.device))
+        G_loss  = -torch.mean(learner)
+
         self.policy_optim_GAN.zero_grad()
         G_loss.backward()
         self.policy_optim_GAN.step()
+
 
 
     def compute_gradient_penalty(self,expert_data,generate_data):

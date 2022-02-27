@@ -51,7 +51,7 @@ parser.add_argument('--kernel'    ,   default='energy')
 parser.add_argument('--discrim_update_num', type=int, default=50, help='update number of discriminator (default: 2)')
 parser.add_argument('--suspend_accu_exp', type=float, default=0.80,help='accuracy for suspending discriminator about expert data (default: 0.8)')
 parser.add_argument('--suspend_accu_gen', type=float, default=0.80,help='accuracy for suspending discriminator about generated data (default: 0.8)')
-parser.add_argument('--lambda_gp', type=float, default=0.01, help='GP parameter')
+parser.add_argument('--lambda_gp', type=float, default=0.001, help='GP parameter')
 
 args = parser.parse_args()
 for iteration in range(2,6):
@@ -126,9 +126,9 @@ for iteration in range(2,6):
             if train_discrim_flag:
                 expert_acc_mean, learner_acc_mean = 0, 0
                 for i in range(args.discrim_update_num):
-                    for m in range(10):
+                    for m in range(1):
                         expert_acc, learner_acc = agent.train_discrim(demonstrations,args.batch_size)
-                    agent.train_generator(args.batch_size)
+                    # agent.train_generator(args.batch_size)
 
                     expert_acc_mean  += expert_acc
                     learner_acc_mean += learner_acc
