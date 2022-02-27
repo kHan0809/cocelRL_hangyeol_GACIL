@@ -52,7 +52,7 @@ class GACIL(object):
         self.beta_max =args.beta_max
 
         self.discrim = Discriminator(state_dim + action_dim, args.hidden_dim).to(self.device)
-        self.discrim_optim = Adam(self.discrim.parameters(),lr=args.lr/100.0)
+        self.discrim_optim = Adam(self.discrim.parameters(),lr=args.lr)
 
 
 
