@@ -53,7 +53,7 @@ class GACIL(object):
         self.beta_max =args.beta_max
 
         self.discrim = Discriminator(state_dim + action_dim, args.hidden_dim).to(self.device)
-        self.discrim_optim = Adam(self.discrim.parameters(),lr=args.lr/100.0)
+        self.discrim_optim = Adam(self.discrim.parameters(),lr=args.lr/10.0)
 
 
 
@@ -226,13 +226,22 @@ class GACIL(object):
         discrim_loss = criterion(learner, torch.ones((state_batch.shape[0], 1)).to(self.device)) + criterion(expert, torch.zeros((demonstrations.shape[0], 1)).to(self.device))
 
         self.discrim_optim.zero_grad()
-        discrim_loss.backward(retain_graph=True)
+        discrim_loss.backward()
         self.discrim_optim.step()
 
-        expert_acc = ((self.discrim(demonstrations) < 0.2).float()).mean()
-        learner_acc = ((self.discrim(torch.cat([state_batch, action_batch], dim=1)) > 0.8).float()).mean()
+        expert_acc = ((self.discrim(demonstrations) < 0.5).float()).mean()
+        learner_acc = ((self.discrim(torch.cat([state_batch, action_batch], dim=1)) > 0.5).float()).mean()
+
+        return  expert_acc, learner_acc
+
+    def train_generator(self,batch_size):
+        batch = self.buffer.sample_batch(batch_size=batch_size)
+        state_batch = batch['obs']
+        state_batch  = torch.FloatTensor(state_batch).to(self.device)
+        action_batch = self.policy(state_batch)
 
         #==========train_G===============================
+        criterion = torch.nn.BCELoss()
 
         learner = self.discrim(torch.cat([state_batch, action_batch], dim=1))
         G_loss  = criterion(learner, torch.ones((state_batch.shape[0], 1)).to(self.device))
@@ -240,8 +249,6 @@ class GACIL(object):
         G_loss.backward()
         self.policy_optim_GAN.step()
 
-
-        return  expert_acc, learner_acc
 
 
 class Sqrt0(torch.autograd.Function):

@@ -34,7 +34,7 @@ parser.add_argument('--update_after',    type=int, default=1000,   help='learnin
 parser.add_argument('--update_every',    type=int, default=50,   help='learning rate (default: 0.0003)')
 
 #test parameter
-parser.add_argument('--num_test_episodes', type=int, default=10,   help='learning rate (default: 0.0003)')
+parser.add_argument('--num_test_episodes', type=int, default=1,   help='learning rate (default: 0.0003)')
 parser.add_argument('--num_demo', type=int, default=50000,   help='learning rate (default: 0.0003)')
 
 #GAC parameter

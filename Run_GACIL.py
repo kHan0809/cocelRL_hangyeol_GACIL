@@ -49,8 +49,8 @@ parser.add_argument('--kernel'    ,   default='energy')
 
 #GAIL parameter
 parser.add_argument('--discrim_update_num', type=int, default=50, help='update number of discriminator (default: 2)')
-parser.add_argument('--suspend_accu_exp', type=float, default=0.90,help='accuracy for suspending discriminator about expert data (default: 0.8)')
-parser.add_argument('--suspend_accu_gen', type=float, default=0.85,help='accuracy for suspending discriminator about generated data (default: 0.8)')
+parser.add_argument('--suspend_accu_exp', type=float, default=0.80,help='accuracy for suspending discriminator about expert data (default: 0.8)')
+parser.add_argument('--suspend_accu_gen', type=float, default=0.80,help='accuracy for suspending discriminator about generated data (default: 0.8)')
 
 args = parser.parse_args()
 for iteration in range(2,6):
@@ -126,10 +126,14 @@ for iteration in range(2,6):
                 expert_acc_mean, learner_acc_mean = 0, 0
                 for i in range(args.discrim_update_num):
                     expert_acc, learner_acc = agent.train_discrim(demonstrations,args.batch_size)
+                    agent.train_generator(args.batch_size)
+
                     expert_acc_mean  += expert_acc
                     learner_acc_mean += learner_acc
                 expert_acc_mean /= args.discrim_update_num
                 learner_acc_mean /= args.discrim_update_num
+
+                print(reward, irl_reward)
                 print("Expert: %.2f%% | Learner: %.2f%%" % (expert_acc * 100, learner_acc * 100))
                 if expert_acc_mean > args.suspend_accu_exp and learner_acc_mean > args.suspend_accu_gen:
                     train_discrim_flag = False

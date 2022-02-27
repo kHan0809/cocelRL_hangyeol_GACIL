@@ -97,7 +97,7 @@ class Discriminator(nn.Module):
         self.fc2 = nn.Linear(hidden_sizes[0], hidden_sizes[1])
         self.fc3 = nn.Linear(hidden_sizes[1], 1)
 
-        self.apply(weight_init_Xavier)
+        self.apply(weight_init)
 
     def forward(self, x):
         x = torch.tanh(self.fc1(x))
