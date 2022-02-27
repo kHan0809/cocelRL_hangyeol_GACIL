@@ -38,6 +38,7 @@ class GACIL(object):
 
         self.policy = GenerativeGaussianMLPActor(state_dim, action_dim,args.hidden_dim).to(self.device)
         self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
+        self.policy_optim_GAN = Adam(self.policy.parameters(), lr=args.lr/100.0)
         self.policy_target = GenerativeGaussianMLPActor(state_dim, action_dim,args.hidden_dim).to(self.device)
         hard_update(self.policy_target, self.policy)
 
@@ -52,7 +53,7 @@ class GACIL(object):
         self.beta_max =args.beta_max
 
         self.discrim = Discriminator(state_dim + action_dim, args.hidden_dim).to(self.device)
-        self.discrim_optim = Adam(self.discrim.parameters(),lr=args.lr)
+        self.discrim_optim = Adam(self.discrim.parameters(),lr=args.lr/100.0)
 
 
 
@@ -228,17 +229,16 @@ class GACIL(object):
         discrim_loss.backward(retain_graph=True)
         self.discrim_optim.step()
 
-        expert_acc = ((self.discrim(demonstrations) < 0.5).float()).mean()
-        learner_acc = ((self.discrim(torch.cat([state_batch, action_batch], dim=1)) > 0.5).float()).mean()
+        expert_acc = ((self.discrim(demonstrations) < 0.2).float()).mean()
+        learner_acc = ((self.discrim(torch.cat([state_batch, action_batch], dim=1)) > 0.8).float()).mean()
 
         #==========train_G===============================
 
         learner = self.discrim(torch.cat([state_batch, action_batch], dim=1))
         G_loss  = criterion(learner, torch.ones((state_batch.shape[0], 1)).to(self.device))
-        self.policy_optim.zero_grad()
+        self.policy_optim_GAN.zero_grad()
         G_loss.backward()
-        self.policy_optim.step()
-
+        self.policy_optim_GAN.step()
 
 
         return  expert_acc, learner_acc
