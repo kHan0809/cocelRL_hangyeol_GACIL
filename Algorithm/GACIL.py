@@ -213,11 +213,11 @@ class GACIL(object):
         state_batch = batch['obs']
 
         state_batch  = torch.FloatTensor(state_batch).to(self.device)
-        action_batch = self.policy(state_batch)
+        action_batch = self.policy_target(state_batch)
 
         criterion = torch.nn.BCELoss()
 
-        learner = self.discrim(torch.cat([state_batch, action_batch], dim=1))
+        learner = self.discrim(torch.cat([state_batch, action_batch], dim=1)) #dim 한번 봐야할듯
         demonstrations = torch.Tensor(demonstrations).to(self.device)
 
         expert = self.discrim(demonstrations)
@@ -225,22 +225,11 @@ class GACIL(object):
         discrim_loss = criterion(learner, torch.ones((state_batch.shape[0], 1)).to(self.device)) + criterion(expert, torch.zeros((demonstrations.shape[0], 1)).to(self.device))
 
         self.discrim_optim.zero_grad()
-        discrim_loss.backward(retain_graph=True)
+        discrim_loss.backward()
         self.discrim_optim.step()
 
         expert_acc = ((self.discrim(demonstrations) < 0.5).float()).mean()
         learner_acc = ((self.discrim(torch.cat([state_batch, action_batch], dim=1)) > 0.5).float()).mean()
-
-        #==========train_G===============================
-
-        learner = self.discrim(torch.cat([state_batch, action_batch], dim=1))
-        G_loss  = criterion(learner, torch.ones((state_batch.shape[0], 1)).to(self.device))
-        self.policy_optim.zero_grad()
-        G_loss.backward()
-        self.policy_optim.step()
-
-
-
         return  expert_acc, learner_acc
 
 

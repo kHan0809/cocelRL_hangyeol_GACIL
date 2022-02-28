@@ -56,7 +56,7 @@ args = parser.parse_args()
 for iteration in range(2,6):
     # log
     if args.log == True:
-        f = open("./log" + str(iteration) + "GACIL_v2" + ".txt", 'w')
+        f = open("./log" + str(iteration) + "GACIL_v1" + ".txt", 'w')
         f.close()
     seed = set_seed(args.seed)
     print(seed)
@@ -174,7 +174,7 @@ for iteration in range(2,6):
             print("Beta         : {:.2f}".format(agent.beta))
             print("----------------------------------------")
 
-            f = open("./log" + str(iteration) + "GACIL_v2" + ".txt", 'a')
+            f = open("./log" + str(iteration) + "GACIL_v1" + ".txt", 'a')
             f.write(" ".join([str(t+1), str(int(round(test_avg_ret)))]))
             f.write("\n")
             f.close()

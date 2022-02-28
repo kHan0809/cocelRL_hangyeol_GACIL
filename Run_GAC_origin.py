@@ -47,7 +47,7 @@ parser.add_argument('--beta_step' , type=float, default=0.01,help = '0.01')
 parser.add_argument('--kernel'    ,   default='energy')
 
 args = parser.parse_args()
-for iteration in range(1,2):
+for iteration in range(2,6):
     # log
     if args.log == True:
         f = open("./log" + str(iteration) + "GAC" + ".txt", 'w')
@@ -116,13 +116,12 @@ for iteration in range(1,2):
             epoch = (t+1) // args.steps_per_epoch
 
             #===========task_mean_std========
-            np.save("./model_save/"+args.env_name+"_obs_mean", agent.obs_mean.cpu().detach().numpy())
-            np.save("./model_save/"+args.env_name+"_obs_std", agent.obs_std.cpu().detach().numpy())
-            if epoch % 10 == 0:
-                print("SAVE_model!")
-                torch.save(agent.policy.state_dict(), "./model_save/policy_"+args.env_name+"_"+str(epoch)+".pth")
-                torch.save(agent.critic.state_dict(), "./model_save/critic_"+args.env_name+"_"+str(epoch)+".pth")
-
+            # np.save("./model_save/"+args.env_name+"_obs_mean", agent.obs_mean.cpu().detach().numpy())
+            # np.save("./model_save/"+args.env_name+"_obs_std", agent.obs_std.cpu().detach().numpy())
+            # if epoch % 10 == 0:
+            #     print("SAVE_model!")
+            #     torch.save(agent.policy.state_dict(), "./model_save/policy_"+args.env_name+"_"+str(epoch)+".pth")
+            #     torch.save(agent.critic.state_dict(), "./model_save/critic_"+args.env_name+"_"+str(epoch)+".pth")
 
             if epoch == args.epochs:
                 pass

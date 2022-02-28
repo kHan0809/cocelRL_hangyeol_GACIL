@@ -1,1 +1,1 @@
-cocelRL_hangyeol_GANtest
+cocelRL_hangyeol
