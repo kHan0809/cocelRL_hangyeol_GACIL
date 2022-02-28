@@ -210,7 +210,7 @@ class GACIL(object):
         action = torch.Tensor(action).to(self.device)
         state_action = torch.cat([state,action])
         with torch.no_grad():
-            return -math.log(self.discrim(state_action)[0].item())
+            return self.discrim(state_action)[0].clamp(-3,3).item()
     def train_discrim(self,demonstrations,batch_size):
         batch = self.buffer.sample_batch(batch_size=batch_size)
         state_batch = batch['obs']
@@ -237,8 +237,8 @@ class GACIL(object):
         self.discrim_optim.step()
 
 
-        expert_acc = ((self.discrim(sample_demonstrations) < 0.5).float()).mean()
-        learner_acc = ((self.discrim(torch.cat([state_batch, action_batch], dim=1)) > 0.5).float()).mean()
+        expert_acc = ((self.discrim(sample_demonstrations)).float()).mean()
+        learner_acc = ((self.discrim(torch.cat([state_batch, action_batch], dim=1))).float()).mean()
 
         return  expert_acc, learner_acc
 

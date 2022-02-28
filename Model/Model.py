@@ -102,8 +102,8 @@ class Discriminator(nn.Module):
     def forward(self, x):
         x = torch.tanh(self.fc1(x))
         x = torch.tanh(self.fc2(x))
-        prob = torch.sigmoid(self.fc3(x))
-        return prob
+        # prob = torch.sigmoid(self.fc3(x))
+        return self.fc3(x)
 
 
 
