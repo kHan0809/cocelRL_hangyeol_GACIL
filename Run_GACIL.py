@@ -53,10 +53,10 @@ parser.add_argument('--suspend_accu_exp', type=float, default=0.90,help='accurac
 parser.add_argument('--suspend_accu_gen', type=float, default=0.85,help='accuracy for suspending discriminator about generated data (default: 0.8)')
 
 args = parser.parse_args()
-for iteration in range(2,6):
+for iteration in range(1,6):
     # log
     if args.log == True:
-        f = open("./log" + str(iteration) + "GACIL_v2" + ".txt", 'w')
+        f = open("./log" + str(iteration) + "GACIL_v3" + ".txt", 'w')
         f.close()
     seed = set_seed(args.seed)
     print(seed)
@@ -96,13 +96,17 @@ for iteration in range(2,6):
             action = agent.select_action(state)
 
         next_state, reward, done, _ = env.step(action * act_limit)  # Step
-        irl_reward = agent.get_reward(state, action)
+
 
         ep_ret += reward
         ep_len += 1
 
         mask = 1.0 if ep_len == env._max_episode_steps else float(not done)
-        agent.buffer.store(state, action, reward+irl_reward, next_state, mask)
+        if  30 > ((t + 1) // args.steps_per_epoch):
+            irl_reward = agent.get_reward(state, action)
+            agent.buffer.store(state, action, reward+irl_reward, next_state, mask)
+        else:
+            agent.buffer.store(state, action, reward , next_state, mask)
 
         agent.stable_baseline()
 
@@ -174,7 +178,7 @@ for iteration in range(2,6):
             print("Beta         : {:.2f}".format(agent.beta))
             print("----------------------------------------")
 
-            f = open("./log" + str(iteration) + "GACIL_v2" + ".txt", 'a')
+            f = open("./log" + str(iteration) + "GACIL_v3" + ".txt", 'a')
             f.write(" ".join([str(t+1), str(int(round(test_avg_ret)))]))
             f.write("\n")
             f.close()
